@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quick review about applications using digital epidemiology for AD/ADRD signals.</title>
+<style>
+  :root{
+    /* Viridis stops (approx.) */
+    --v0:#440154; --v1:#482878; --v2:#3e4989; --v3:#31688e; --v4:#26828e;
+    --v5:#1f9e89; --v6:#35b779; --v7:#6ece58; --v8:#b5de2b; --v9:#fde725;
+
+    --bg:#0f1115; --card:#161a22; --muted:#aeb4c0; --text:#e8ebf2; --text-dim:#cfd4df;
+    --border:#232836; --chip:#202535; --focus:#6ece58;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:32px 18px; background:linear-gradient(180deg, #0b0d12 0%, #0e121a 100%);
+    color:var(--text); font:14.5px/1.45 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+  }
+  .wrap{max-width:1200px;margin:0 auto}
+  header{
+    display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; justify-content:space-between; margin-bottom:16px;
+  }
+  .title{ display:flex; align-items:center; gap:10px; }
+  .title h1{ margin:0; font-size:22px; letter-spacing:.3px; font-weight:700; color:var(--text); }
+  .pill{
+    background:linear-gradient(90deg, var(--v3), var(--v6)); color:#fff; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:600;
+  }
+  .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  input[type="search"], select, button{
+    background:#0e1420; color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px 12px;
+    outline:none; transition:border .2s, box-shadow .2s;
+  }
+  input[type="search"]{ min-width:260px; }
+  input[type="search"]:focus{ border-color:var(--focus); box-shadow:0 0 0 3px #6ece5855; }
+  button{ cursor:pointer; }
+  .card{
+    background:linear-gradient(180deg, #121720 0%, #10151e 100%); border:1px solid var(--border);
+    border-radius:14px; padding:10px; box-shadow:0 6px 18px rgba(0,0,0,.18);
+  }
+  table{ width:100%; border-collapse:separate; border-spacing:0; }
+  thead th{
+    position:sticky; top:0; z-index:1; text-align:left; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+    color:#fff; background:linear-gradient(90deg, var(--v1), var(--v4)); padding:14px 12px; border-top-left-radius:10px; border-top-right-radius:10px;
+  }
+  thead th.sortable{ cursor:pointer; }
+  thead th.sortable .arrow{ opacity:.65; margin-left:6px; font-size:11px; }
+  tbody td{ padding:14px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+  tbody tr:hover{ background:rgba(53,183,121,.07); }
+  a{ color:var(--v7); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+  .chip-type{
+    display:inline-flex; align-items:center; gap:6px; font-weight:600; padding:6px 10px; border-radius:999px; background:var(--chip); color:var(--text-dim);
+  }
+  .chip-type[data-type="Caregiver"]{ background:color-mix(in oklab, var(--v4) 22%, #10151e); color:#d7ffef; }
+  .chip-type[data-type="Patient"]{ background:color-mix(in oklab, var(--v6) 22%, #10151e); color:#f2ffdf; }
+  .chip-type[data-type="Population"]{ background:color-mix(in oklab, var(--v2) 22%, #10151e); color:#e9e7ff; }
+  .metric{
+    display:inline-block; font-variant-numeric:tabular-nums; font-weight:700; padding:4px 8px; border-radius:8px;
+    background:linear-gradient(90deg, var(--v6), var(--v8)); color:#0b0d0f;
+  }
+  .desc{ color:var(--text-dim); }
+  .srcs a{ display:inline-block; margin-right:10px; }
+  .no-results{ padding:16px; text-align:center; color:var(--muted); }
+  footer{
+    margin:18px auto 0; max-width:1200px; padding:14px 18px; color:var(--text-dim);
+    font-size:12.5px; border-top:1px solid var(--border);
+  }
+  footer a{ color:var(--v7); text-decoration:none; }
+  footer a:hover{ text-decoration:underline; }
+  @media (max-width: 880px){
+    thead th:nth-child(3), tbody td:nth-child(3){ display:none; } /* hide Model/Method on small screens */
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <h1>quick review about applications using digital epidemiology for AD/ADRD signals.</h1>
+      <span class="pill">Viridis</span>
+    </div>
+    <div class="controls">
+      <input id="q" type="search" placeholder="Search title, model, description, type…" />
+      <select id="typeFilter" title="Filter by study type">
+        <option value="">All types</option>
+        <option value="Caregiver">Caregiver identification</option>
+        <option value="Patient">Patient-level</option>
+        <option value="Population">Population signal</option>
+      </select>
+      <button id="reset">Reset</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th class="sortable" data-key="title">Title <span class="arrow">↕</span></th>
+          <th>Description</th>
+          <th class="sortable" data-key="model">Model / Method <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="metricVal">Performance <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="type">Type <span class="arrow">↕</span></th>
+          <th>Source(s)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="empty" class="no-results" style="display:none">No matching results.</div>
+  </div>
+</div>
+
+<footer>
+  Crafted by <strong>Dr. Onicio B Leal Neto</strong> — <a href="mailto:onicio@arizona.edu">onicio@arizona.edu</a>
+</footer>
+
+<script>
+/* ---- Data (direct links) ------------------------------------------------ */
+const ROWS = [
+  {
+    title: "Automatically Identifying Dementia Family Caregivers on Twitter",
+    desc: "Annotated caregiver-related tweets; supervised NLP to detect users likely caring for a person with dementia.",
+    model: "BERTweet-Large (best in benchmark); supervised NLP",
+    metric: "F1 = 0.962 (test)",
+    metricVal: 0.962,
+    type: "Caregiver",
+    sources: [
+      {label:"PMC", url:"https://pmc.ncbi.nlm.nih.gov/articles/PMC9526111/"},
+      {label:"JMIR Aging", url:"https://aging.jmir.org/2022/3/e39547/"}
+    ]
+  },
+  {
+    title: "BOUN @ #SMM4H-HeaRD 2025: Enhancing Dementia Family Caregiver Detection on Twitter/X",
+    desc: "Shared-task system using a lightweight LLM; highest score in task.",
+    model: "Gemma-2 (2B) + LoRA; quantized fine-tuning",
+    metric: "F1 = 0.966 (test)",
+    metricVal: 0.966,
+    type: "Caregiver",
+    sources: [
+      {label:"PDF", url:"https://workshop-proceedings.icwsm.org/pdf/2025_58.pdf"},
+      {label:"Proceedings page", url:"https://workshop-proceedings.icwsm.org/abstract.php?id=2025_58"}
+    ]
+  },
+  {
+    title: "Prompting Large Language Models to Detect Dementia Family Caregivers (SMM4H 2025)",
+    desc: "Instruction-tuned LLMs with zero/few-shot prompting for caregiver tweet detection.",
+    model: "LLaMA-3.1-8B / Mistral-7B + LoRA; prompt engineering",
+    metric: "Macro-F1 ≈ 0.95 (val/test)",
+    metricVal: 0.95,
+    type: "Caregiver",
+    sources: [
+      {label:"arXiv", url:"https://www.arxiv.org/abs/2508.01999"}
+    ]
+  },
+  {
+    title: "Facebook Interaction as a Potential Marker of Cognitive Decline in Older Adults",
+    desc: "Pilot study linking historical Facebook language/interaction features with MoCA; proposes ML predictors.",
+    model: "Feature-based classifiers (language & interaction) vs MoCA",
+    metric: "Pilot / preliminary",
+    metricVal: null,
+    type: "Patient",
+    sources: [
+      {label:"PMC", url:"https://pmc.ncbi.nlm.nih.gov/articles/PMC11712622/"},
+      {label:"GBHI project page", url:"https://www.gbhi.org/projects/facebook-interaction-potential-marker-cognitive-decline"}
+    ]
+  },
+  {
+    title: "Identifying People with Dementia on Twitter",
+    desc: "Characterizes self-identified accounts; discusses feasibility/ethics of patient-level identification.",
+    model: "NLP characterization; content & profile signals",
+    metric: "Exploratory (no classifier metric)",
+    metricVal: null,
+    type: "Patient",
+    sources: [
+      {label:"PubMed", url:"https://pubmed.ncbi.nlm.nih.gov/30081665/"},
+      {label:"SAGE (Dementia) abstract", url:"https://journals.sagepub.com/doi/abs/10.1177/1471301218792122"}
+    ]
+  },
+  {
+    title: "A Term-Weighted Topic Modeling Approach for Dementia Caregivers’ Tweets (AMIA)",
+    desc: "Enhanced topic modeling of caregiver discourse to inform outreach/interventions.",
+    model: "Term-weighted topic model (e.g., GSDMM variant; Log/BDC weights)",
+    metric: "Topic coherence ↑ vs baselines",
+    metricVal: null,
+    type: "Population",
+    sources: [
+      {label:"PMC", url:"https://pmc.ncbi.nlm.nih.gov/articles/PMC12099380/"},
+      {label:"AMIA page", url:"https://amia.secure-platform.com/symposium/gallery/rounds/82001/details/11644"}
+    ]
+  },
+  {
+    title: "Co-developing & Evaluating a Campaign to Reduce Dementia Misconceptions on Twitter",
+    desc: "Classifier to detect misconceptions vs neutral tweets; campaign evaluation.",
+    model: "Random Forest + feature engineering; 5-fold CV",
+    metric: "Accuracy (reported in paper)",
+    metricVal: null,
+    type: "Population",
+    sources: [
+      {label:"PMC", url:"https://pmc.ncbi.nlm.nih.gov/articles/PMC9987190/"},
+      {label:"PubMed", url:"https://pubmed.ncbi.nlm.nih.gov/37113444/"}
+    ]
+  },
+  {
+    title: "Using Twitter to Examine Stigma Against People with Dementia During COVID-19",
+    desc: "Thematic analysis of stigma/misinformation patterns on Twitter.",
+    model: "Qualitative coding + thematic analysis",
+    metric: "N/A (qualitative)",
+    metricVal: null,
+    type: "Population",
+    sources: [
+      {label:"PMC", url:"https://pmc.ncbi.nlm.nih.gov/articles/PMC9015751/"},
+      {label:"JMIR Aging", url:"https://aging.jmir.org/2022/1/e35677/"}
+    ]
+  },
+  {
+    title: "Analyzing Public Discourse of Dementia from Spanish & English Tweets (2007–2023)",
+    desc: "Comparative analysis vs other neurological disorders; stigma/etiology themes.",
+    model: "NLP + content/sentiment/topic analyses",
+    metric: "Descriptive/longitudinal metrics",
+    metricVal: null,
+    type: "Population",
+    sources: [
+      {label:"PMC", url:"https://pmc.ncbi.nlm.nih.gov/articles/PMC11542256/"},
+      {label:"Frontiers (full text)", url:"https://www.frontiersin.org/articles/10.3389/fneur.2024.1459578/full"}
+    ]
+  },
+  {
+    title: "Twitter Use by the Dementia Community During COVID-19: User Classification & SNA",
+    desc: "User-type classification + social network analysis; examines influential communities.",
+    model: "SVM text classifier + social network analysis",
+    metric: "Accuracy ≈ 0.82",
+    metricVal: 0.82,
+    type: "Population",
+    sources: [
+      {label:"PDF", url:"https://strathprints.strath.ac.uk/80068/1/Alhayan_etal_OIR_2022_Twitter_use_by_the_dementia_community_during_covid_19_a_user_classification.pdf"}
+    ]
+  },
+  {
+    title: "Public Perception of Genetic Testing for Dementia Risk (Twitter 2010–2023)",
+    desc: "Unsupervised deep learning of long-horizon Twitter data on genetic testing perceptions.",
+    model: "Deep clustering / embedding-based unsupervised modeling",
+    metric: "Cluster coherence & trend analyses",
+    metricVal: null,
+    type: "Population",
+    sources: [
+      {label:"PubMed", url:"https://pubmed.ncbi.nlm.nih.gov/40371554/"},
+      {label:"Journal TOC", url:"https://journals.lww.com/alzheimerjournal/toc/2025/04000"}
+    ]
+  }
+];
+
+/* ---- Rendering & interactions ------------------------------------------ */
+const tbody = document.querySelector("#tbl tbody");
+const empty = document.getElementById("empty");
+const q = document.getElementById("q");
+const typeFilter = document.getElementById("typeFilter");
+const resetBtn = document.getElementById("reset");
+
+let sortKey = "title";
+let sortDir = 1; // 1 asc, -1 desc
+let filtered = [...ROWS];
+
+function fmtMetric(m, v){
+  if (v == null || isNaN(v)) {
+    return `<span class="metric" style="background:linear-gradient(90deg, var(--v2), var(--v4)); color:#fff;">${m}</span>`;
+  }
+  const stops = ["var(--v3)","var(--v4)","var(--v5)","var(--v6)","var(--v7)","var(--v8)","var(--v9)"];
+  const idx = Math.max(0, Math.min(stops.length-1, Math.round((v-0.5) * (stops.length-1) / 0.5)));
+  return `<span class="metric" style="background:linear-gradient(90deg, ${stops[Math.max(0,idx-1)]}, ${stops[idx]});">${m}</span>`;
+}
+
+function fmtSources(list){
+  return `<div class="srcs">` + list.map(s=>`<a href="${s.url}" target="_blank" rel="noopener">${s.label}</a>`).join("") + `</div>`;
+}
+
+function rowHTML(r){
+  return `
+    <tr>
+      <td><strong>${r.title}</strong></td>
+      <td class="desc">${r.desc}</td>
+      <td>${r.model}</td>
+      <td>${fmtMetric(r.metric, r.metricVal)}</td>
+      <td><span class="chip-type" data-type="${r.type}" title="${r.type}">${r.type}</span></td>
+      <td>${fmtSources(r.sources)}</td>
+    </tr>
+  `;
+}
+
+function render(){
+  tbody.innerHTML = filtered.map(rowHTML).join("");
+  empty.style.display = filtered.length ? "none" : "block";
+}
+
+function applyFilters(){
+  const term = q.value.trim().toLowerCase();
+  const t = typeFilter.value;
+  filtered = ROWS.filter(r=>{
+    const hay = (r.title + " " + r.desc + " " + r.model + " " + r.type).toLowerCase();
+    const matchesTerm = !term || hay.includes(term);
+    const matchesType = !t || r.type === t;
+    return matchesTerm && matchesType;
+  }).sort((a,b)=>{
+    const av = (a[sortKey] ?? "").toString().toLowerCase();
+    const bv = (b[sortKey] ?? "").toString().toLowerCase();
+    if (av < bv) return -1*sortDir;
+    if (av > bv) return 1*sortDir;
+    return 0;
+  });
+  render();
+}
+
+document.querySelectorAll("th.sortable").forEach(th=>{
+  th.addEventListener("click", ()=>{
+    const key = th.dataset.key;
+    if (sortKey === key){ sortDir *= -1; } else { sortKey = key; sortDir = 1; }
+    applyFilters();
+  });
+});
+
+q.addEventListener("input", applyFilters);
+typeFilter.addEventListener("change", applyFilters);
+resetBtn.addEventListener("click", ()=>{
+  q.value = ""; typeFilter.value=""; sortKey="title"; sortDir=1; applyFilters();
+});
+
+/* initial render */
+applyFilters();
+</script>
+</body>
+</html>
